@@ -1,0 +1,259 @@
+1
+00:00:00,113 --> 00:00:04,567
+Welcome! This video shows how to install StocksReport and create your first stock reports.
+
+2
+00:00:04,617 --> 00:00:09,068
+Pause any time and follow along. All commands are also written in docs/HOW_TO_RUN.md.
+
+3
+00:00:09,052 --> 00:00:14,006
+Chapter 1 — What you need: Python 3.10 or newer, Git and an internet connection.
+
+4
+00:00:14,056 --> 00:00:18,027
+Install Python and Git from their official websites if you don’t have them yet.
+
+5
+00:00:18,077 --> 00:00:23,046
+Next, open a terminal: PowerShell on Windows, Terminal on Mac or Linux.
+
+6
+00:00:23,096 --> 00:00:25,691
+Check that Python is installed: type  python --version  and press Enter.
+
+7
+00:00:25,741 --> 00:00:30,196
+Then check Git:  git --version   (On Mac/Linux, use python3 if python is not found.)
+
+8
+00:00:21,580 --> 00:00:25,548
+Chapter 2 — One-time setup. You only need to do this once per computer.
+
+9
+00:00:25,598 --> 00:00:29,957
+Step 1: download the project with git clone.
+
+10
+00:00:30,007 --> 00:00:34,757
+Move into the project folder and switch to the latest version of the code.
+
+11
+00:00:34,807 --> 00:00:37,516
+Step 2: create a private Python environment for this project.
+
+12
+00:00:37,566 --> 00:00:41,504
+Step 3: switch the environment on. Mac/Linux: source .venv/bin/activate — Windows: .venv\Scripts\Activate.ps1
+
+13
+00:00:41,554 --> 00:00:45,008
+Your prompt now starts with (.venv). Repeat this activate step every time you open a new terminal.
+
+14
+00:00:45,058 --> 00:00:50,932
+Step 4: install the required packages. This takes 1 to 3 minutes.
+
+15
+00:00:50,982 --> 00:00:56,504
+Step 5: tell the SEC (a free data source) your name and email — use your own details.
+
+16
+00:00:56,554 --> 00:00:59,006
+Setup is done! 🎉
+
+17
+00:00:55,313 --> 00:01:00,280
+Chapter 3 — Generate the reports. Type the stock tickers you want, then the formats.
+
+18
+00:01:00,330 --> 00:01:02,937
+Example: Apple (AAPL), Microsoft (MSFT) and JPMorgan (JPM), in all three formats.
+
+19
+00:01:02,987 --> 00:01:22,148
+It takes about 20 seconds per stock. Each line shows the verdict, score, price, fair value and data checks.
+
+20
+00:01:22,198 --> 00:01:25,880
+All files are saved in the  reports  folder.
+
+21
+00:01:25,930 --> 00:01:30,384
+Open the folder with:  start reports  (Windows),  open reports  (Mac) or  xdg-open reports  (Linux).
+
+22
+00:01:25,444 --> 00:01:31,155
+Chapter 4 — The HTML report. Double-click the .html file to open it in your browser.
+
+23
+00:01:31,205 --> 00:01:35,655
+At the top: the verdict (Buy / Hold / Sell), the score out of 100 and the confidence.
+
+24
+00:01:35,705 --> 00:01:40,160
+Key metrics: valuation, margins, growth and risk — each tagged with where the number came from.
+
+25
+00:01:40,210 --> 00:01:45,666
+Benchmark: performance against the S&P 500 (SPY) and the sector ETF, with a 1-year chart.
+
+26
+00:01:45,716 --> 00:01:50,170
+Score breakdown: six areas, each with the numbers behind it.
+
+27
+00:01:50,220 --> 00:01:54,673
+Pros and cons — every point shows the exact figure that triggered it.
+
+28
+00:01:54,723 --> 00:01:59,177
+The retail investor view and the portfolio manager view.
+
+29
+00:01:59,227 --> 00:02:03,682
+Fair value and a suggested entry price with a 10% margin of safety.
+
+30
+00:02:03,732 --> 00:02:09,188
+Data verification: each number checked against SEC filings and Nasdaq prices.
+
+31
+00:02:13,669 --> 00:02:17,642
+Chapter 5 — The Excel workbook. One file covers every stock you asked for.
+
+32
+00:02:17,692 --> 00:02:23,156
+Comparison sheet: one row per stock — price, score, verdict, valuation, margins and more.
+
+33
+00:02:23,206 --> 00:02:28,184
+Summary sheet per stock: verdict, score, pillar scores, fair value and investor views.
+
+34
+00:02:28,234 --> 00:02:32,698
+Metrics sheet: every metric with its source (computed, Yahoo or SEC).
+
+35
+00:02:32,748 --> 00:02:37,221
+Benchmark sheet: returns vs the S&P 500 and sector ETF, plus the peer comparison.
+
+36
+00:02:37,271 --> 00:02:41,747
+Pros-Cons sheet: pros, cons, risks, catalysts, analyst actions and news headlines.
+
+37
+00:02:41,797 --> 00:02:46,750
+Verification sheet: every data check, colour-coded PASS / WARN / FAIL.
+
+38
+00:02:46,818 --> 00:02:50,786
+Chapter 6 — The PowerPoint deck: 10 slides per stock, ready to present.
+
+39
+00:02:50,836 --> 00:02:53,992
+Title slide with the verdict and score.
+
+40
+00:02:54,042 --> 00:02:57,196
+Key metrics.
+
+41
+00:02:57,246 --> 00:03:00,398
+Benchmark chart against the S&P 500 and the sector ETF.
+
+42
+00:03:00,448 --> 00:03:03,601
+Score breakdown.
+
+43
+00:03:03,651 --> 00:03:06,805
+Pros and cons, with the evidence for each point.
+
+44
+00:03:06,855 --> 00:03:10,010
+Investor views.
+
+45
+00:03:10,060 --> 00:03:13,214
+Verdict, fair value and entry price.
+
+46
+00:03:13,264 --> 00:03:16,415
+Data verification summary.
+
+47
+00:03:15,692 --> 00:03:24,329
+Chapter 7 — The web app. Run  streamlit run app.py  and your browser opens automatically.
+
+48
+00:03:24,379 --> 00:03:26,049
+Type one or more tickers in the sidebar, separated by commas.
+
+49
+00:03:26,099 --> 00:03:33,743
+Keep “Verify data” ticked, then click Analyze.
+
+50
+00:03:33,793 --> 00:03:37,612
+Overview: verdict, score, price and the company summary.
+
+51
+00:03:37,662 --> 00:03:41,455
+Metrics & Benchmark: key numbers, returns and peers.
+
+52
+00:03:41,505 --> 00:03:45,303
+Pros / Cons with their evidence.
+
+53
+00:03:45,353 --> 00:03:49,152
+Investor Views: retail investor and portfolio manager perspectives.
+
+54
+00:03:49,202 --> 00:03:53,021
+Verdict & Fair Value, with the suggested entry price.
+
+55
+00:03:53,071 --> 00:03:56,823
+Data Verification: every check against SEC and Nasdaq.
+
+56
+00:03:56,873 --> 00:04:00,326
+Download buttons give you the HTML, Excel and PowerPoint files directly.
+
+57
+00:04:00,376 --> 00:04:09,077
+Enter several tickers to compare them side by side.
+
+58
+00:04:09,127 --> 00:04:15,083
+The comparison table shows each stock’s score, verdict, valuation, returns and data checks.
+
+59
+00:04:21,168 --> 00:04:27,524
+Chapter 8 — Check data accuracy against the original sources.
+
+60
+00:04:27,574 --> 00:04:34,309
+Numbers are compared with SEC filings, Nasdaq prices and accounting checks. Only non-PASS items are listed.
+
+61
+00:04:34,359 --> 00:04:44,813
+PASS = matches the source. WARN = small definition difference. FAIL = real difference — the report then uses the SEC value.
+
+62
+00:04:44,863 --> 00:04:48,817
+SKIP means the source does not publish that number, e.g. for non-U.S. companies.
+
+63
+00:04:54,747 --> 00:05:01,198
+Chapter 9 — Quick fixes for the most common problems.
+
+64
+00:05:01,248 --> 00:05:06,216
+More help is in docs/HOW_TO_RUN.md, section 9 — Troubleshooting.
+
+65
+00:05:06,266 --> 00:05:12,217
+That’s it — you can now create reports for any stock. Reports are educational, not financial advice.
