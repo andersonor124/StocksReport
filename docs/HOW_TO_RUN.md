@@ -44,13 +44,17 @@ Everything is free. No accounts, subscriptions or API keys are required.
 
 **Check that Python and Git are installed** — type each line and press Enter:
 
-```bash
-python --version
-git --version
-```
+| Mac / Linux | Windows (PowerShell) |
+|---|---|
+| `python3 --version` | `python --version` |
+| `git --version` | `git --version` |
 
 You should see something like `Python 3.13.1` and `git version 2.43.0`.
-On Mac/Linux, if `python` is not found, use `python3` instead everywhere in this guide.
+
+> 🍎 **Mac users:** macOS has no `python` command — always type **`python3`** until the environment is
+> switched on (Step 3 below). If `python3 --version` says *command not found* or a window offers to
+> install developer tools, install Python from [python.org/downloads](https://www.python.org/downloads/)
+> (or click **Install** in that window / run `xcode-select --install`), then close and reopen Terminal.
 
 ---
 
@@ -68,9 +72,9 @@ git checkout claude/youthful-mayer-y9e5sg
 
 **Step 2 — create a private Python environment** (keeps this project's packages separate)
 
-```bash
-python -m venv .venv
-```
+| Mac / Linux | Windows (PowerShell) |
+|---|---|
+| `python3 -m venv .venv` | `python -m venv .venv` |
 
 **Step 3 — switch the environment on**
 
@@ -79,6 +83,9 @@ python -m venv .venv
 | `source .venv/bin/activate` | `.venv\Scripts\Activate.ps1` |
 
 Your prompt now starts with `(.venv)`. **You must do this step every time you open a new terminal.**
+
+From here on, plain `python` and `pip` work on every computer (including Mac), because they come from the
+environment you just switched on — so the remaining commands are the same for everyone.
 
 **Step 4 — install the required packages** (takes 1–3 minutes)
 
@@ -266,7 +273,8 @@ from Yahoo Finance is compared with an original source:
 
 | Problem | Fix |
 |---|---|
-| `python` / `pip` is not recognised | Python isn't installed or isn't on PATH. Re-install Python (Windows: tick *Add python.exe to PATH*), or try `python3` / `pip3`. |
+| Mac: `zsh: command not found: python` (or `pip`) | Before Step 3 use `python3` (e.g. `python3 -m venv .venv`). After activating the environment (`source .venv/bin/activate`), `python` and `pip` work. |
+| `python` / `pip` is not recognised (Windows) | Python isn't installed or isn't on PATH. Re-install Python and tick *Add python.exe to PATH*, then open a new PowerShell window. |
 | `No module named ...` | The environment isn't switched on. Run Step 3 of the setup again (`source .venv/bin/activate` or `.venv\Scripts\Activate.ps1`). |
 | Windows: *"running scripts is disabled on this system"* when activating | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer **Y**, then activate again. |
 | Warning `SEC_USER_AGENT not set` or *403* errors from the SEC | Do Step 5 of the setup with your own name and email. |
