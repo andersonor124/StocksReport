@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from stocksreport import DISCLAIMER, pipeline
+from stocksreport.data import lookup
 from stocksreport.models import StockReport
 from stocksreport.report.html import (METRIC_ROWS, fmt_money, fmt_mult, fmt_pct, fmt_price,
                                       fmt_num, fmt_value, render_html)
@@ -38,6 +39,32 @@ def parse_list(raw: str) -> list[str]:
             seen.add(t)
             out.append(t)
     return out
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def lookup_cached(query: str) -> list[tuple]:
+    return [(m.ticker, m.name, m.exchange) for m in lookup.resolve(query)]
+
+
+def company_picker(raw: str) -> list[str]:
+    """Resolve company names / tickers typed in the sidebar; ask the user when a name is ambiguous."""
+    chosen, unknown = [], []
+    for q in lookup.split_input(raw):
+        matches = [lookup.Match(*m) for m in lookup_cached(q)]
+        if not matches:
+            unknown.append(q)
+            continue
+        if lookup.is_confident(matches, q):
+            pick = matches[0]
+            st.caption(f"'{q}' → {pick.ticker} · {pick.name}")
+        else:
+            pick = st.selectbox(f"Which company did you mean by '{q}'?", matches, format_func=lambda m: m.label(),
+                                key=f"pick_{q.lower()}")
+        if pick.ticker not in chosen:
+            chosen.append(pick.ticker)
+    for q in unknown:
+        st.warning(f"No company found for '{q}'. Check the spelling or try the ticker symbol.")
+    return chosen
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -328,8 +355,10 @@ st.caption("Free, rule-based stock analysis from public data (Yahoo Finance, SEC
 
 with st.sidebar:
     st.header("Analyze")
-    tickers_raw = st.text_input("Ticker(s)", placeholder="AAPL, MSFT, JPM",
-                                help="One or more symbols, separated by commas.")
+    companies_raw = st.text_input("Company name or ticker", placeholder="e.g. Apple or AAPL",
+                                  help="Type a company name or stock ticker. Separate several with commas "
+                                       "to compare them.")
+    tickers = company_picker(companies_raw)
     peers_raw = st.text_input("Peers override (optional)", placeholder="MSFT, GOOGL",
                               help="Comma-separated peer tickers used for the peer comparison.")
     verify = st.checkbox("Verify data against SEC/Nasdaq", value=True)
@@ -337,10 +366,10 @@ with st.sidebar:
     st.caption(DISCLAIMER)
 
 if go_clicked:
-    tickers, peers = parse_list(tickers_raw), tuple(parse_list(peers_raw))
+    peers = tuple(parse_list(peers_raw))
     if not tickers:
         st.session_state.pop("results", None)
-        st.warning("Enter at least one ticker.")
+        st.warning("Enter a company name or ticker in the sidebar first.")
     else:
         results, errors = [], []
         progress = st.progress(0.0, text="Starting…")
@@ -375,7 +404,7 @@ if state:
                              f"({r.score.total:.0f}/100) · verified {verification_label(r)}"):
                 render_single(r, r.profile.ticker)
 elif not go_clicked:
-    st.info("Enter one or more tickers in the sidebar and click **Analyze**.")
+    st.info("Type the company you want to analyse (name or ticker) in the sidebar and click **Analyze**.")
 
 st.divider()
 st.caption(f"**Disclaimer:** {DISCLAIMER}")

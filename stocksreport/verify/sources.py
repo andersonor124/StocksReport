@@ -55,9 +55,18 @@ def _get(url: str, headers: dict, timeout: int = 60) -> requests.Response:
 
 
 @lru_cache(maxsize=1)
+def _company_tickers() -> dict:
+    return _get("https://www.sec.gov/files/company_tickers.json", {"User-Agent": sec_user_agent()}).json()
+
+
+@lru_cache(maxsize=1)
 def _ticker_map() -> dict[str, int]:
-    data = _get("https://www.sec.gov/files/company_tickers.json", {"User-Agent": sec_user_agent()}).json()
-    return {v["ticker"].upper(): int(v["cik_str"]) for v in data.values()}
+    return {v["ticker"].upper(): int(v["cik_str"]) for v in _company_tickers().values()}
+
+
+def sec_companies() -> list[tuple[str, str]]:
+    """(ticker, company name) for every SEC registrant - used to look up companies by name."""
+    return [(v["ticker"].upper(), v["title"]) for v in _company_tickers().values()]
 
 
 def sec_cik(ticker: str) -> Optional[int]:
