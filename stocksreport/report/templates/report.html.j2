@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{{ p.ticker }} stock report · {{ r.as_of.isoformat() }}</title>
+<style>
+:root {
+  --bg: #f5f6f8; --card: #ffffff; --text: #1a1d23; --muted: #646b78; --border: #e2e5ea;
+  --head: #f0f2f5; --accent: #2457c5;
+  --buy: #1e8e4e; --hold: #c98a06; --sell: #c8372d;
+  --pos: #18794a; --neg: #c0362c;
+  --good-bg: #e3f4ea; --good-fg: #16653d; --mid-bg: #fdf1d8; --mid-fg: #8a5c00;
+  --bad-bg: #fbe3e1; --bad-fg: #9d2a22; --na-bg: #eceef1; --na-fg: #646b78;
+  --bar-track: #e8ebef;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115; --card: #181b21; --text: #e6e8ec; --muted: #9aa1ad; --border: #2a2f38;
+    --head: #20242c; --accent: #7aa2ff;
+    --buy: #2fb36a; --hold: #e0a526; --sell: #e5584d;
+    --pos: #46c483; --neg: #f0736a;
+    --good-bg: #173326; --good-fg: #7fdca7; --mid-bg: #3a2e12; --mid-fg: #f0c766;
+    --bad-bg: #3d1c1a; --bad-fg: #f59a92; --na-bg: #262a32; --na-fg: #9aa1ad;
+    --bar-track: #2a2f38;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 40px; }
+h1, h2, h3 { line-height: 1.25; margin: 0; }
+h2 { font-size: 1.15rem; margin-bottom: 12px; }
+h3 { font-size: .95rem; margin: 14px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+p { margin: 0 0 10px; }
+a { color: var(--accent); }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.grid2 > .card { margin-bottom: 0; }
+.grid2 + .card, .grid2 + .grid2 { margin-top: 16px; }
+/* header */
+.hdr { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; }
+.hdr-id { min-width: 0; flex: 1 1 320px; }
+.hdr h1 { font-size: 1.7rem; overflow-wrap: anywhere; }
+.ticker { display: inline-block; font-weight: 700; color: var(--accent); margin-right: 8px; }
+.price { font-size: 1.6rem; font-weight: 700; margin-top: 8px; }
+.verdict-box { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.verdict { padding: 10px 22px; border-radius: 10px; color: #fff; font-size: 1.6rem; font-weight: 800; letter-spacing: .02em; }
+.verdict-buy { background: var(--buy); } .verdict-hold { background: var(--hold); } .verdict-sell { background: var(--sell); }
+.scorebig { font-size: 1.9rem; font-weight: 800; line-height: 1; }
+.scorebig span { font-size: .95rem; font-weight: 500; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { font-size: .78rem; padding: 2px 9px; border-radius: 999px; background: var(--head); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+/* tables */
+.tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: var(--head); font-weight: 600; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.median td { font-weight: 700; background: var(--head); }
+tr.self td { font-weight: 600; }
+.pos { color: var(--pos); } .neg { color: var(--neg); }
+.src { font-size: .7rem; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; border: 1px solid var(--border); color: var(--muted); }
+.src-computed { color: var(--good-fg); background: var(--good-bg); border-color: transparent; }
+.src-yfinance { color: var(--accent); }
+.src-sec { color: var(--mid-fg); background: var(--mid-bg); border-color: transparent; }
+.corrections { margin: 0 0 14px; padding: 10px 14px; border-left: 3px solid var(--hold); background: var(--mid-bg); border-radius: 0 8px 8px 0; }
+.corrections ul { margin: 4px 0 0; padding-left: 18px; font-size: .9rem; }
+.metrics-grid { columns: 2 340px; column-gap: 24px; }
+.metrics-grid table { break-inside: avoid; }
+/* score bars */
+.pillar { margin-bottom: 14px; }
+.pillar-head { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+.bar { height: 10px; background: var(--bar-track); border-radius: 6px; overflow: hidden; margin: 5px 0 4px; }
+.bar > div { height: 100%; border-radius: 6px; }
+.fill-good { background: var(--buy); } .fill-mid { background: var(--hold); } .fill-bad { background: var(--sell); } .fill-na { background: transparent; }
+.pillar ul { margin: 0; padding-left: 18px; font-size: .85rem; color: var(--muted); }
+/* pros/cons */
+.pc { list-style: none; padding: 0; margin: 0; }
+.pc li { padding: 9px 0 9px 26px; border-bottom: 1px solid var(--border); position: relative; }
+.pc li:last-child { border-bottom: 0; }
+.pc li::before { position: absolute; left: 0; top: 8px; font-weight: 800; }
+.pros li::before { content: "+"; color: var(--pos); }
+.cons li::before { content: "\2212"; color: var(--neg); }
+.ev { display: block; font-size: .85rem; color: var(--muted); }
+ul.plain { margin: 0; padding-left: 18px; }
+/* fair value */
+.fv { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.fv div { background: var(--head); border-radius: 8px; padding: 10px 12px; }
+.fv .lbl { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.fv .val { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.entry { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--head); border-radius: 0 8px 8px 0; }
+/* badges */
+.badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: .9rem; }
+.b-good { background: var(--good-bg); color: var(--good-fg); } .b-mid { background: var(--mid-bg); color: var(--mid-fg); }
+.b-bad { background: var(--bad-bg); color: var(--bad-fg); } .b-na { background: var(--na-bg); color: var(--na-fg); }
+.status { font-weight: 700; font-size: .78rem; padding: 2px 8px; border-radius: 4px; }
+.status-pass { background: var(--good-bg); color: var(--good-fg); }
+.status-warn { background: var(--mid-bg); color: var(--mid-fg); }
+.status-fail { background: var(--bad-bg); color: var(--bad-fg); }
+.status-skip { background: var(--na-bg); color: var(--na-fg); }
+.news li { padding: 7px 0; border-bottom: 1px solid var(--border); list-style: none; display: flex; gap: 10px; justify-content: space-between; }
+.news { padding: 0; margin: 0; }
+.news .t { min-width: 0; overflow-wrap: anywhere; }
+.news .sc { white-space: nowrap; font-variant-numeric: tabular-nums; font-size: .85rem; }
+#chart { width: 100%; height: 360px; }
+.chart-fallback { color: var(--muted); font-size: .9rem; }
+footer { margin-top: 24px; padding: 16px; border-top: 1px solid var(--border); font-size: .85rem; color: var(--muted); }
+@media (max-width: 600px) {
+  .wrap { padding: 14px 10px 30px; }
+  .card { padding: 14px 14px; }
+  .hdr h1 { font-size: 1.35rem; }
+  .verdict { font-size: 1.3rem; padding: 8px 16px; }
+  th, td { padding: 6px 7px; }
+  #chart { height: 300px; }
+  .peer-name { display: none; }
+}
+@media print { .card { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="card hdr">
+  <div class="hdr-id">
+    <h1><span class="ticker">{{ p.ticker }}</span>{{ p.name }}</h1>
+    <div class="chips">
+      {% if p.sector %}<span class="chip">{{ p.sector }}</span>{% endif %}
+      {% if p.industry %}<span class="chip">{{ p.industry }}</span>{% endif %}
+      {% if p.exchange %}<span class="chip">{{ p.exchange }}</span>{% endif %}
+      <span class="chip">As of {{ r.as_of.isoformat() }}</span>
+    </div>
+    <div class="price">{{ m.price | price }} <span class="muted small">{{ p.currency }}</span></div>
+  </div>
+  <div class="verdict-box">
+    <div class="verdict verdict-{{ a.verdict | lower }}">{{ a.verdict }}</div>
+    <div>
+      <div class="scorebig">{{ "%.0f" | format(s.total) }}<span>/100</span></div>
+      <div class="muted small">Confidence: <strong>{{ a.confidence }}</strong></div>
+    </div>
+  </div>
+</header>
+
+<section class="card">
+  <h2>Summary</h2>
+  <p>{{ a.summary | md }}</p>
+  <p class="muted small">{{ a.rationale | md }}</p>
+</section>
+
+<section class="card">
+  <h2>Company overview</h2>
+  {% if p.summary %}<p>{{ p.summary }}</p>{% else %}<p class="muted">No business description available.</p>{% endif %}
+  <div class="chips">
+    {% if p.country %}<span class="chip">{{ p.country }}</span>{% endif %}
+    {% if p.employees %}<span class="chip">{{ "{:,}".format(p.employees) }} employees</span>{% endif %}
+    {% if m.market_cap %}<span class="chip">Market cap {{ m.market_cap | money }}</span>{% endif %}
+    {% if p.website and (p.website | safe_url) %}<span class="chip"><a href="{{ p.website | safe_url }}" rel="noopener noreferrer" target="_blank">{{ p.website }}</a></span>{% endif %}
+  </div>
+</section>
+
+<section class="card">
+  <h2>Key metrics</h2>
+  {% set half = (metric_rows | length + 1) // 2 %}
+  <div class="metrics-grid">
+    {% for chunk in [metric_rows[:half], metric_rows[half:]] %}
+    <table>
+      <tbody>
+      {% for row in chunk %}
+        <tr><td>{{ row.label }}{% if row.source %}<span class="src src-{{ row.source | lower }}">{{ row.source }}</span>{% endif %}</td>
+            <td class="num">{{ row.value }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+  </div>
+  <p class="muted small" style="margin-top:8px">"computed" = recomputed from financial statements and price history; "yfinance" = taken from Yahoo Finance; "SEC" = SEC EDGAR filing value that overrode Yahoo data; "annual" = latest fiscal-year figure.</p>
+</section>
+
+<section class="card">
+  <h2>Benchmark</h2>
+  <h3>Returns</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Period</th><th class="num">{{ p.ticker }}</th><th class="num">{{ b.market_ticker }}</th>{% if b.sector_ticker %}<th class="num">{{ b.sector_ticker }}</th>{% endif %}<th class="num">vs {{ b.market_ticker }}</th></tr></thead>
+    <tbody>
+    {% for row in b.returns %}
+      {% set rel = (row.stock - row.market) if (row.stock is not none and row.market is not none) else none %}
+      <tr><td>{{ row.period }}</td>
+        <td class="num {{ row.stock | sign }}">{{ row.stock | pct(1, true) }}</td>
+        <td class="num {{ row.market | sign }}">{{ row.market | pct(1, true) }}</td>
+        {% if b.sector_ticker %}<td class="num {{ row.sector | sign }}">{{ row.sector | pct(1, true) }}</td>{% endif %}
+        <td class="num {{ rel | sign }}">{{ rel | pct(1, true) }}</td></tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">No return data.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <h3>Price, 1 year (rebased to 100)</h3>
+  {% if has_chart %}
+  <div id="chart" role="img" aria-label="Price history chart rebased to 100"></div>
+  <noscript><p class="chart-fallback">Enable JavaScript to view the chart.</p></noscript>
+  {% else %}
+  <p class="chart-fallback">No price history available.</p>
+  {% endif %}
+
+  <h3>Peers</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Ticker</th><th class="num">Mkt cap</th><th class="num">P/E</th><th class="num">Fwd P/E</th><th class="num">P/S</th><th class="num">Net margin</th><th class="num">ROE</th><th class="num">Rev growth</th></tr></thead>
+    <tbody>
+      <tr class="self"><td>{{ p.ticker }}</td><td class="num">{{ m.market_cap | money }}</td><td class="num">{{ m.pe_ttm | mult }}</td><td class="num">{{ m.forward_pe | mult }}</td><td class="num">{{ m.price_to_sales | mult }}</td><td class="num">{{ m.net_margin | pct }}</td><td class="num">{{ m.roe | pct }}</td><td class="num">{{ m.revenue_growth_yoy | pct }}</td></tr>
+    {% for pr in b.peers %}
+      <tr><td title="{{ pr.name or '' }}">{{ pr.ticker }}{% if pr.name %} <span class="muted small peer-name">{{ pr.name }}</span>{% endif %}</td><td class="num">{{ pr.market_cap | money }}</td><td class="num">{{ pr.pe_ttm | mult }}</td><td class="num">{{ pr.forward_pe | mult }}</td><td class="num">{{ pr.price_to_sales | mult }}</td><td class="num">{{ pr.net_margin | pct }}</td><td class="num">{{ pr.roe | pct }}</td><td class="num">{{ pr.revenue_growth_yoy | pct }}</td></tr>
+    {% endfor %}
+    {% set pm = b.peer_median %}
+      <tr class="median"><td>Peer median</td><td class="num">{{ pm.market_cap | money }}</td><td class="num">{{ pm.pe_ttm | mult }}</td><td class="num">{{ pm.forward_pe | mult }}</td><td class="num">{{ pm.price_to_sales | mult }}</td><td class="num">{{ pm.net_margin | pct }}</td><td class="num">{{ pm.roe | pct }}</td><td class="num">{{ pm.revenue_growth_yoy | pct }}</td></tr>
+    </tbody>
+  </table>
+  </div>
+  {% if not b.peers %}<p class="muted small">No peer data available.</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Score: {{ "%.0f" | format(s.total) }}/100 <span class="muted small">(Buy &ge; 65, Sell &lt; 45)</span></h2>
+  {% for pl in s.pillars %}
+  {% set cls = pl.score | scorecls %}
+  <div class="pillar">
+    <div class="pillar-head"><span>{{ pl.name }} <span class="muted small">weight {{ "%.0f" | format(pl.weight * 100) }}%</span></span>
+      <span>{% if pl.score is not none %}{{ "%.0f" | format(pl.score) }}{% else %}<span class="muted">n/a</span>{% endif %}</span></div>
+    <div class="bar"><div class="fill-{{ cls }}" style="width: {{ '%.1f' | format(pl.score or 0) }}%"></div></div>
+    {% if pl.notes %}<ul>{% for n in pl.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Pros</h2>
+    <ul class="pc pros">
+    {% for pt in a.pros %}<li>{{ pt.text }}<span class="ev">{{ pt.evidence }}</span></li>{% else %}<li class="muted">None identified.</li>{% endfor %}
+    </ul>
+  </section>
+  <section class="card">
+    <h2>Cons</h2>
+    <ul class="pc cons">
+    {% for pt in a.cons %}<li>{{ pt.text }}<span class="ev">{{ pt.evidence }}</span></li>{% else %}<li class="muted">None identified.</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Retail investor view</h2>
+    <p>{{ a.retail_investor_view | md }}</p>
+  </section>
+  <section class="card">
+    <h2>Portfolio manager view</h2>
+    <p>{{ a.portfolio_manager_view | md }}</p>
+  </section>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Key risks</h2>
+    <ul class="plain">{% for k in a.key_risks %}<li>{{ k }}</li>{% else %}<li class="muted">None listed.</li>{% endfor %}</ul>
+  </section>
+  <section class="card">
+    <h2>Catalysts</h2>
+    <ul class="plain">{% for k in a.catalysts %}<li>{{ k }}</li>{% else %}<li class="muted">None listed.</li>{% endfor %}</ul>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Fair value</h2>
+  <div class="fv">
+    <div><div class="lbl">Price</div><div class="val">{{ m.price | price }}</div></div>
+    <div><div class="lbl">Analyst low</div><div class="val">{{ fv.analyst_low | price }}</div></div>
+    <div><div class="lbl">Analyst mean</div><div class="val">{{ fv.analyst_mean | price }}</div></div>
+    <div><div class="lbl">Analyst high</div><div class="val">{{ fv.analyst_high | price }}</div></div>
+    <div><div class="lbl">Peer-multiple value</div><div class="val">{{ fv.peer_multiple_value | price }}</div></div>
+    <div><div class="lbl">Blended fair value</div><div class="val">{{ fv.blended | price }}</div></div>
+    <div><div class="lbl">Upside</div><div class="val {{ fv.upside_pct | sign }}">{{ fv.upside_pct | pct(1, true) }}</div></div>
+  </div>
+  {% if a.entry_price_suggestion %}<div class="entry"><strong>Entry suggestion:</strong> {{ a.entry_price_suggestion | md }}</div>{% endif %}
+</section>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Analyst sentiment</h2>
+    <p>
+      {% if sent.num_analysts %}{{ sent.num_analysts }} analysts{% endif %}
+      {% if sent.recommendation_key %} · consensus <strong>{{ sent.recommendation_key | replace("_", " ") | title }}</strong>{% endif %}
+      {% if sent.analyst_trend %} · trend {{ sent.analyst_trend }}{% endif %}
+      · {{ sent.upgrades_90d }} upgrades / {{ sent.downgrades_90d }} downgrades (90d)
+    </p>
+    {% if sent.analyst_counts %}
+    <div class="chips" style="margin-bottom:10px">{% for k, v in sent.analyst_counts.items() %}<span class="chip">{{ k }}: {{ v }}</span>{% endfor %}</div>
+    {% endif %}
+    <h3>Recent analyst actions</h3>
+    <ul class="plain small">{% for act in sent.recent_actions %}<li>{{ act }}</li>{% else %}<li class="muted">No recent actions.</li>{% endfor %}</ul>
+  </section>
+  <section class="card">
+    <h2>News headlines</h2>
+    <p>Average sentiment:
+      {% if sent.news_score is not none %}<strong class="{{ sent.news_score | sign }}">{{ "%+.2f" | format(sent.news_score) }}</strong>{% else %}<span class="muted">n/a</span>{% endif %}
+      {% if sent.news_label %}&nbsp;({{ sent.news_label }}){% endif %} <span class="muted small">VADER, -1 to +1</span></p>
+    <ul class="news">
+    {% for h in headlines %}
+      <li><span class="t">{% if h.url %}<a href="{{ h.url }}" rel="noopener noreferrer nofollow" target="_blank">{{ h.title }}</a>{% else %}{{ h.title }}{% endif %}
+        <span class="ev">{{ h.publisher or "" }}{% if h.date %} · {{ h.date }}{% endif %}</span></span>
+        <span class="sc {{ h.score | sign }}">{% if h.score is not none %}{{ "%+.2f" | format(h.score) }}{% else %}&mdash;{% endif %}</span></li>
+    {% else %}
+      <li class="muted">No headlines.</li>
+    {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<section class="card" id="verification">
+  <h2>Data verification</h2>
+  {% if r.data_corrections %}
+  <div class="corrections"><strong>Corrections applied</strong> <span class="small">({{ r.data_corrections | length }}): SEC-filed values replaced Yahoo Finance data</span>
+    <ul>{% for c in r.data_corrections %}<li>{{ c }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+  {% if verification is none %}
+    <p><span class="badge b-na">Verification not run</span></p>
+    <p class="muted small">Metrics were not cross-checked against SEC EDGAR / Nasdaq for this report.</p>
+  {% else %}
+    {% set vc = verification.counts %}
+    <p><span class="badge b-{{ verification.badge }}">Data verified: {{ vc.PASS }}/{{ verification.evaluated }} checks passed</span>
+      <span class="muted small">&nbsp;{{ vc.WARN }} warn · {{ vc.FAIL }} fail · {{ vc.SKIP }} skipped</span></p>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Status</th><th>Category</th><th>Field</th><th>Period</th><th class="num">Pipeline</th><th class="num">Source value</th><th>Source</th><th class="num">Diff</th><th>Note</th></tr></thead>
+      <tbody>
+      {% for c in verification.checks %}
+        <tr><td><span class="status status-{{ c.status | lower }}">{{ c.status }}</span></td>
+          <td>{{ c.category }}</td><td>{{ c.field }}</td><td>{{ c.period or "" }}</td>
+          <td class="num">{{ c.pipeline_value | num }}</td><td class="num">{{ c.source_value | num }}</td>
+          <td>{{ c.source }}</td><td class="num">{% if c.diff_pct is not none %}{{ "%+.2f%%" | format(c.diff_pct) }}{% else %}&mdash;{% endif %}</td><td class="small muted">{{ c.note or "" }}</td></tr>
+      {% else %}
+        <tr><td colspan="9" class="muted">No checks.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+</section>
+
+<footer>
+  <strong>Disclaimer.</strong> {{ disclaimer }}
+  <div style="margin-top:6px">Generated {{ r.as_of.isoformat() }} by StocksReport from free public data (Yahoo Finance, SEC EDGAR, Nasdaq).</div>
+</footer>
+</div>
+
+{% if has_chart %}
+<script src="{{ plotly_cdn }}"></script>
+<script>
+(function () {
+  var el = document.getElementById("chart");
+  if (!window.Plotly || !el) { if (el) el.innerHTML = '<p class="chart-fallback">Chart unavailable (could not load Plotly).</p>'; return; }
+  var traces = {{ chart_json }};
+  var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  var fg = dark ? "#e6e8ec" : "#1a1d23", grid = dark ? "#2a2f38" : "#e2e5ea";
+  var palette = ["#2457c5", "#8a8f98", "#e08a1e", "#2a9d8f", "#b5446e"];
+  traces.forEach(function (t, i) { t.line = t.line || {}; t.line.color = palette[i % palette.length];
+    t.hovertemplate = "%{x}<br>" + t.name + ": %{y:.1f}<extra></extra>"; });
+  var layout = { margin: {l: 40, r: 10, t: 10, b: 30}, paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: {color: fg, size: 12}, xaxis: {gridcolor: grid, showgrid: false}, yaxis: {gridcolor: grid, zeroline: false},
+    legend: {orientation: "h", y: 1.08, x: 0}, hovermode: "x unified",
+    shapes: [{type: "line", xref: "paper", x0: 0, x1: 1, y0: 100, y1: 100, line: {color: grid, dash: "dot", width: 1}}] };
+  Plotly.newPlot(el, traces, layout, {responsive: true, displaylogo: false, displayModeBar: false});
+})();
+</script>
+{% endif %}
+</body>
+</html>
