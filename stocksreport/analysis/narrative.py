@@ -184,7 +184,10 @@ def build(ticker: str, name: str, m: Metrics, b: BenchmarkComparison, sc: RuleSc
     if fv.upside_pct and fv.upside_pct > 0.1:
         catalysts.append("Re-rating toward fair value estimate")
 
-    spread = abs(sc.total - (config.BUY_THRESHOLD if sc.verdict != "Sell" else config.SELL_THRESHOLD))
+    spread = (sc.total - config.BUY_THRESHOLD if sc.verdict == "Buy" else
+              config.SELL_THRESHOLD - sc.total if sc.verdict == "Sell" else
+              min(config.BUY_THRESHOLD - sc.total, sc.total - config.SELL_THRESHOLD))
+    spread = abs(spread)
     coverage = sum(1 for p in sc.pillars if p.score is not None) / len(sc.pillars)
     confidence = "High" if spread >= 10 and coverage > 0.8 else "Medium" if spread >= 4 or coverage > 0.8 else "Low"
 

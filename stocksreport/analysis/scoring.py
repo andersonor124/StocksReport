@@ -47,7 +47,7 @@ def score(m: Metrics, bench: BenchmarkComparison, info: dict, targets: dict, sec
     rel_pe = m.forward_pe / pm.forward_pe if m.forward_pe and pm.forward_pe else None
     pillars.append(_pillar("Valuation", [
         (scale(rel_pe, 1.6, 0.6), f"Forward P/E {_num(m.forward_pe)} vs peer median {_num(pm.forward_pe)}"),
-        (scale(m.peg, 3.0, 0.8), f"PEG {_num(m.peg, 2)}"),
+        (scale(m.peg, 3.0, 0.8) if m.peg and m.peg > 0 else None, f"PEG {_num(m.peg, 2)}"),
         (scale(m.fcf_yield, -0.01, 0.06), f"FCF yield {_pct(m.fcf_yield)}"),
     ]))
 

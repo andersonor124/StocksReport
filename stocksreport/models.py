@@ -145,7 +145,7 @@ class VerificationCheck(BaseModel):
     pipeline_value: Optional[float] = None
     source_value: Optional[float] = None
     source: str
-    diff_pct: Optional[float] = None
+    diff_pct: Optional[float] = None  # percent units: 4.15 means +4.15%
     status: Literal["PASS", "WARN", "FAIL", "SKIP"]
     note: Optional[str] = None
 

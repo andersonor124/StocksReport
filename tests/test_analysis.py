@@ -163,3 +163,18 @@ def test_fair_value_ignores_peer_multiple_with_too_few_peers():
     b.peers = [PeerRow(ticker="A", forward_pe=10.0)]
     fv = S.score(Metrics(price=100, forward_eps=10.0), b, {}, {"mean": 150}, "Technology").fair_value
     assert fv.peer_multiple_value is None and fv.blended == 150
+
+
+def test_negative_peg_is_ignored():
+    sc = S.score(Metrics(price=100, peg=-1.2), _bench_stub(), {}, {}, "Technology")
+    val = next(p for p in sc.pillars if p.name == "Valuation")
+    assert val.score is None or val.score < 100
+
+
+def test_hold_near_sell_line_is_low_confidence(aapl):
+    from stocksreport.models import FairValue, PillarScore, RuleScore, SentimentSummary
+    sc = RuleScore(pillars=[PillarScore(name=n, score=46, weight=w) for n, w in
+                            __import__("stocksreport.config", fromlist=["x"]).PILLAR_WEIGHTS.items()],
+                   total=46, verdict="Hold", fair_value=FairValue())
+    a = N.build("X", "X Corp", Metrics(price=10), _bench_stub(), sc, SentimentSummary())
+    assert a.confidence != "High"

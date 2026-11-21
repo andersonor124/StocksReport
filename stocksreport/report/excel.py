@@ -445,7 +445,7 @@ def _verification_sheet(wb: Workbook, r: StockReport) -> None:
         ws.cell(row=i, column=4, value=c.period)
         _put(ws, i, 5, c.pipeline_value, "#,##0.00")
         _put(ws, i, 6, c.source_value, "#,##0.00")
-        _put(ws, i, 7, c.diff_pct, "0.00%")
+        _put(ws, i, 7, None if c.diff_pct is None else c.diff_pct / 100, "0.00%")  # diff_pct is in percent units
         ws.cell(row=i, column=8, value=c.source)
         ws.cell(row=i, column=9, value=c.note)
     row = _corrections(ws, r, len(v.checks) + 5)

@@ -87,7 +87,7 @@ def fetch(ticker: str, use_cache: bool = True, period: str = "5y") -> RawData:
     import yfinance as yf
 
     ticker = ticker.upper().strip()
-    if use_cache and (cached := _cache_get(ticker, "full")) is not None:
+    if use_cache and (cached := _cache_get(ticker, f"full_{period}")) is not None:
         return cached
 
     t = yf.Ticker(ticker)
@@ -112,7 +112,7 @@ def fetch(ticker: str, use_cache: bool = True, period: str = "5y") -> RawData:
         news=_safe(lambda: t.news, []),
     )
     if use_cache:
-        _cache_put(ticker, "full", raw)
+        _cache_put(ticker, f"full_{period}", raw)
     return raw
 
 

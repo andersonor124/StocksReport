@@ -264,7 +264,7 @@ def _fill_ttm_from_sec(m: Metrics, raw: RawData, facts: dict) -> list[str]:
         return []
     notes = []
     for key, attr, label in (("revenue", "revenue_ttm", "revenue"), ("net_income", "net_income_ttm", "net income")):
-        if m.sources.get(attr) != "annual":
+        if m.sources.get(attr) not in ("annual", "missing"):
             continue
         v = sec_ttm(facts, key, ends)
         if v is None:
@@ -303,7 +303,8 @@ def apply_sec_corrections(m: Metrics, res: VerificationResult, raw: Optional[Raw
     for field, attr, label in (("Revenue", "revenue_growth_yoy", "revenue growth"),
                                ("Diluted EPS", "eps_growth_yoy", "EPS growth")):
         rows = filed(field)
-        if len(rows) == 2 and any(c.status == "FAIL" for c in rows) and rows[1].source_value > 0:
+        same_tag = len(rows) == 2 and (rows[0].note or "").split(" (")[0] == (rows[1].note or "").split(" (")[0]
+        if same_tag and any(c.status == "FAIL" for c in rows) and rows[1].source_value > 0:
             new = rows[0].source_value / rows[1].source_value - 1
             old = getattr(m, attr)
             setattr(m, attr, new)

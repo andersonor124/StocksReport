@@ -37,10 +37,10 @@ def _with_verification(r: StockReport) -> StockReport:
                           diff_pct=0.0, status="PASS"),
         VerificationCheck(category="income", field="net_income", period="FY2025",
                           pipeline_value=100.0, source_value=103.0, source="SEC EDGAR",
-                          diff_pct=0.03, status="WARN", note="small diff"),
+                          diff_pct=3.0, status="WARN", note="small diff"),
         VerificationCheck(category="price", field="close", period="2026-11-20",
                           pipeline_value=10.0, source_value=12.0, source="Nasdaq",
-                          diff_pct=0.2, status="FAIL", note="price mismatch"),
+                          diff_pct=20.0, status="FAIL", note="price mismatch"),
         VerificationCheck(category="balance", field="equity", source="SEC EDGAR",
                           status="SKIP", note="not reported"),
     ])
@@ -210,3 +210,11 @@ def test_corrections_in_pptx(jpm_r, verified):
     r = r.model_copy(update={"data_corrections": [CORR]})
     text = _pptx_text(Presentation(io.BytesIO(to_pptx_bytes(r))))
     assert "Corrections applied" in text and CORR in text
+
+
+def test_diff_pct_is_rendered_as_percent_units():
+    r = _with_verification(_load("AAPL"))
+    wb = load_workbook(io.BytesIO(to_xlsx_bytes([r])))
+    ws = wb["AAPL Verification"]
+    vals = [ws.cell(i, 7).value for i in range(1, ws.max_row + 1) if isinstance(ws.cell(i, 7).value, float)]
+    assert 0.03 in vals and 0.2 in vals  # 3% and 20%, not 300% / 2000%

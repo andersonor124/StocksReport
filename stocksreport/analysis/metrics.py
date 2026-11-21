@@ -151,6 +151,8 @@ def compute(raw: RawData) -> Metrics:
     if pe and eps and fwd_eps and fwd_eps > eps:
         peg = pe / ((fwd_eps / eps - 1) * 100)
     peg = peg if peg is not None else _info(info, "trailingPegRatio")
+    if peg is not None and peg <= 0:  # negative PEG (falling earnings) is not meaningful
+        peg = None
 
     m = Metrics(
         price=price,

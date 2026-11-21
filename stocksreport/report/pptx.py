@@ -524,7 +524,7 @@ def _verification_slide(d: _Deck):
             x.status,
             _trunc(f"{x.category}: {x.field}" + (f" ({x.period})" if x.period else ""), 40),
             _num(x.pipeline_value, "{:,.2f}"), _num(x.source_value, "{:,.2f}"),
-            _pct(x.diff_pct), _trunc(x.source, 18), _trunc(x.note or "", 45),
+            _pct(None if x.diff_pct is None else x.diff_pct / 100, signed=True), _trunc(x.source, 18), _trunc(x.note or "", 45),
         ])
         fills[(i, 0)] = STATUS_COLORS[x.status]
     _table(s, MARGIN, Inches(2.4), CONTENT_W, rows,

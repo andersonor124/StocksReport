@@ -5,7 +5,7 @@ because general-purpose VADER scores phrases like "beats estimates" as neutral.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Optional
 
@@ -75,7 +75,7 @@ def _parse_news(item: dict) -> Optional[dict]:
     url = (c.get("canonicalUrl") or {}).get("url") or (c.get("clickThroughUrl") or {}).get("url") or c.get("link")
     when = c.get("pubDate") or c.get("displayTime")
     if not when and c.get("providerPublishTime"):
-        when = datetime.utcfromtimestamp(c["providerPublishTime"]).isoformat()
+        when = datetime.fromtimestamp(c["providerPublishTime"], tz=timezone.utc).isoformat()
     text = f"{title}. {c.get('summary') or ''}"
     return {"title": title, "publisher": provider.get("displayName") or c.get("publisher"),
             "date": (when or "")[:10], "url": url, "score": round(headline_score(text), 3)}
