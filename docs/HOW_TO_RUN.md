@@ -116,41 +116,63 @@ This lasts until you close the terminal. To make it permanent:
 ## 3. Generate the reports
 
 Make sure you are in the `StocksReport` folder and the environment is on (`(.venv)` in your prompt). Then
-run, replacing the tickers with the ones you want:
+simply run:
 
 ```bash
-python cli.py AAPL MSFT JPM --format html xlsx pptx
+python cli.py
 ```
 
-It takes about 20 seconds per stock the first time. You will see a summary like this:
+The program **asks you which company to analyse**. Type a **company name** (e.g. `nvidia`, `coca cola`)
+or a **ticker** (e.g. `NVDA`), then press Enter. Next it asks which files to create — just press Enter
+for all three (HTML, Excel and PowerPoint):
 
 ```text
-AAPL   Hold score  63.6  price $342.56  fair value $277.97  | data verification: 32/34 checks passed
-   -> reports/AAPL_2026-11-21.html
-   -> reports/AAPL_2026-11-21.pptx
-MSFT   Buy  score  81.8  price $484.52  fair value $532.93  | data verification: 33/36 checks passed
-   -> reports/MSFT_2026-11-21.html
-   -> reports/MSFT_2026-11-21.pptx
-JPM    Hold score  60.3  price $310.53  fair value $336.22  | data verification: 24/29 checks passed
-       correction: revenue growth corrected from 7.3% (Yahoo) to 2.8% using SEC-filed revenue (FY 2025-12-31 vs FY 2024-12-31)
-   -> reports/JPM_2026-11-21.html
-   -> reports/JPM_2026-11-21.pptx
-   -> reports/comparison_2026-11-21.xlsx
+Which stock(s) do you want to analyse?
+Enter a company name or ticker (separate several with commas, q to quit): nvidia
+  'nvidia' → NVDA    NVIDIA Corporation (NMS)
+Which formats? html, xlsx, pptx — press Enter for all three:
+Analysing NVDA ...
+NVDA   Buy  score  87.9  price $125.53  fair value $261.65  | data verification: 25/32 checks passed
+   -> reports/NVDA_2026-11-21.html
+   -> reports/NVDA_2026-11-21.pptx
+   -> reports/NVDA_2026-11-21.xlsx
 ```
 
-*(Your numbers will differ — they are live market data.)*
+*(Your numbers will differ — they are live market data. It takes about 20 seconds per company.)*
+
+* **Several companies:** separate them with commas, e.g. `apple, microsoft, jp morgan` — you also get a
+  side-by-side comparison in Excel.
+* **Name matches more than one company?** You'll see a short numbered list — type the number you want
+  (or press Enter for the first one):
+
+  ```text
+    'berkshire' matches several companies:
+        1) BRK-B   Berkshire Hathaway Inc. New (NYQ)
+        2) BRK-A   Berkshire Hathaway Inc. (NYQ)
+      Choose 1-2 [1]:
+  ```
+* **Not found?** Check the spelling and try again, or use the ticker (look it up on finance.yahoo.com).
+* Type `q` (or just press Enter) to quit.
+
+**Shortcut — everything in one line** (skips the questions): put the companies, then the options:
+
+```bash
+python cli.py <company or ticker> [more companies] --format html xlsx pptx
+```
+
+For example `python cli.py nvidia --format html xlsx pptx` or `python cli.py "coca cola" TSLA --format html`
+(use quotes around names with spaces). Without `--format` the one-line form creates the HTML report only.
 
 **What gets created** — all files go into the `reports` folder:
 
 | File | What it is |
 |---|---|
-| `AAPL_<date>.html` | the full report for one stock, opens in any web browser |
-| `AAPL_<date>.pptx` | a 10-slide PowerPoint deck for one stock |
-| `comparison_<date>.xlsx` | one Excel workbook for all the stocks you asked for (named `AAPL_<date>.xlsx` if you ran only one) |
+| `<TICKER>_<date>.html` | the full report for one stock, opens in any web browser |
+| `<TICKER>_<date>.pptx` | a 10-slide PowerPoint deck for one stock |
+| `comparison_<date>.xlsx` | one Excel workbook for all the stocks you asked for (named `<TICKER>_<date>.xlsx` if you analysed only one) |
 
-* Tickers are the short stock symbols, e.g. `AAPL` (Apple), `MSFT` (Microsoft), `NVDA` (Nvidia),
-  `BRK-B` (Berkshire Hathaway B). Put the tickers **first**, then the options.
-* Running the same command again on the same day overwrites that day's files.
+Files are named after the company's ticker and today's date, e.g. `NVDA_2026-11-21.html`. Running again on
+the same day overwrites that day's files.
 
 ---
 
@@ -188,13 +210,15 @@ score breakdown · pros & cons · investor views · verdict & fair value · data
 
 ## 5. Options
 
+These options go after the company names in the one-line form (`python cli.py <company> --option ...`).
+
 | Option | What it does | Example |
 |---|---|---|
-| `--format` | which files to make: any of `html`, `xlsx`, `pptx` (default: `html` only) | `python cli.py AAPL --format xlsx` |
+| `--format` | which files to make: any of `html`, `xlsx`, `pptx` (default: `html` only) | `python cli.py nvidia --format xlsx` |
 | `--peers` | compare against your own choice of peer companies | `python cli.py NVDA --peers AMD AVGO INTC QCOM` |
-| `--out` | save to a different folder (default: `reports`) | `python cli.py AAPL --out my_reports` |
-| `--no-verify` | skip the SEC / Nasdaq accuracy checks (faster) | `python cli.py AAPL --no-verify` |
-| `--no-cache` | fetch fresh data instead of reusing data from the last 12 hours | `python cli.py AAPL --no-cache` |
+| `--out` | save to a different folder (default: `reports`) | `python cli.py tesla --out my_reports` |
+| `--no-verify` | skip the SEC / Nasdaq accuracy checks (faster) | `python cli.py "coca cola" --no-verify` |
+| `--no-cache` | fetch fresh data instead of reusing data from the last 12 hours | `python cli.py amazon --no-cache` |
 
 See all options any time with `python cli.py --help`.
 
@@ -211,15 +235,18 @@ streamlit run app.py
 Your browser opens at **http://localhost:8501** (if it doesn't, open that address yourself). The first
 time, Streamlit may ask for an email in the terminal — just press Enter to skip.
 
-1. In the left sidebar, type one or more tickers separated by commas, e.g. `AAPL, JPM`.
+1. In the left sidebar, under **Company name or ticker**, type the company you want — a name such as
+   `apple` or a ticker such as `AAPL`. Separate several with commas to compare them. The sidebar shows
+   which company it found; if a name matches more than one, pick the right one from the
+   **"Which company did you mean?"** list.
 2. *(Optional)* type your own peer companies, e.g. `MSFT, GOOGL`.
 3. Keep **Verify data against SEC/Nasdaq** ticked for checked numbers.
 4. Click **Analyze** and wait a few seconds.
 
-* **One ticker** → tabs: *Overview*, *Metrics & Benchmark*, *Pros/Cons*, *Investor Views*,
+* **One company** → tabs: *Overview*, *Metrics & Benchmark*, *Pros/Cons*, *Investor Views*,
   *Verdict & Fair Value*, *Data Verification*, plus buttons to **download** the HTML, Excel and
   PowerPoint files.
-* **Several tickers** → a **comparison table**, a **Download Excel workbook** button and an expandable
+* **Several companies** → a **comparison table**, a **Download Excel workbook** button and an expandable
   section per stock.
 
 To stop the app, go back to the terminal and press **Ctrl + C**.
@@ -231,10 +258,11 @@ To stop the app, go back to the terminal and press **Ctrl + C**.
 Every report already includes a *Data verification* section. To produce a stand-alone accuracy report:
 
 ```bash
-python cli.py verify AAPL MSFT JPM
+python cli.py verify
 ```
 
-It prints a summary per stock and writes `reports/verification_<date>.xlsx` and `.html`. Each number taken
+It asks which company to check (name or ticker), just like report generation — or give them directly:
+`python cli.py verify nvidia "coca cola"`. It prints a summary per stock and writes `reports/verification_<date>.xlsx` and `.html`. Each number taken
 from Yahoo Finance is compared with an original source:
 
 * **SEC filing** — the figure in the company's official 10-K / 10-Q report filed with the SEC
@@ -280,7 +308,8 @@ from Yahoo Finance is compared with an original source:
 | Warning `SEC_USER_AGENT not set` or *403* errors from the SEC | Do Step 5 of the setup with your own name and email. |
 | `No market data found for ticker 'XYZ'` / `No reports produced.` | The ticker is wrong. Check it on finance.yahoo.com. Share classes use a dash: `BRK-B`. |
 | Verification shows *company not found in SEC EDGAR* / many SKIPs | Normal for non-U.S. companies — the report is still produced. |
-| `invalid choice` error | Put the tickers before the options: `python cli.py AAPL --format html`, not `--format html AAPL`. |
+| `invalid choice` error | Put the companies before the options: `python cli.py nvidia --format html`, not `--format html nvidia`. Or just run `python cli.py` and answer the questions. |
+| `No company found for '...'` | Check the spelling, or use the ticker symbol (find it on finance.yahoo.com). Share classes use a dash: `BRK-B`. |
 | The chart area says *Chart unavailable* | The HTML report loads its chart library from the internet; open it while online. |
 | Numbers look out of date | Data is reused for 12 hours. Add `--no-cache`. |
 | Web app: *port 8501 is already in use* | Another copy is running — close it, or run `streamlit run app.py --server.port 8502`. |
@@ -314,4 +343,5 @@ pytest --live    # also re-checks live data against the SEC and Nasdaq
 | 4:48 | 9. Troubleshooting | [§9](#9-troubleshooting) |
 
 Total length 5:12. The commands and outputs shown are from a real run; your prices and scores will differ.
+The video uses the one-line form (`python cli.py AAPL MSFT JPM --format html xlsx pptx`); running plain `python cli.py` instead asks you which company to analyse, as described in [§3](#3-generate-the-reports).
 To show the subtitles as a separate track, load `how_to_run.srt` in your video player (e.g. VLC: *Subtitle → Add Subtitle File*).

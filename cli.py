@@ -67,11 +67,101 @@ def _verify(args) -> int:
     return 1 if any(c.status == "FAIL" for r in results for c in r.checks) and args.strict else 0
 
 
+FORMATS = ["html", "xlsx", "pptx"]
+QUIT = {"q", "quit", "exit"}
+USAGE = ('Usage: python cli.py <company or ticker> [...] [--format html xlsx pptx]\n'
+         '   or: python cli.py            (asks which company to analyse)')
+
+
+def _interactive_ok() -> bool:
+    return sys.stdin.isatty()
+
+
+def _choose(query: str, matches) -> str:
+    print(f"  '{query}' matches several companies:")
+    for i, m in enumerate(matches, 1):
+        print(f"      {i}) {m.label()}")
+    while True:
+        ans = input(f"    Choose 1-{len(matches)} [1]: ").strip()
+        if not ans:
+            return matches[0].ticker
+        if ans.isdigit() and 1 <= int(ans) <= len(matches):
+            return matches[int(ans) - 1].ticker
+        print("    Please type one of the numbers shown.")
+
+
+def resolve_inputs(items: list[str], interactive: bool) -> list[str] | None:
+    """Company names / tickers -> tickers. Returns None if something could not be found."""
+    from stocksreport.data import lookup
+
+    tickers: list[str] = []
+    for item in items:
+        matches = lookup.resolve(item)
+        if not matches:
+            print(f"  No company found for '{item}' — check the spelling or try the ticker symbol.")
+            return None
+        if lookup.is_confident(matches, item) or not interactive:
+            pick = matches[0].ticker
+            print(f"  '{item}' → {matches[0].label()}")
+        else:
+            pick = _choose(item, matches)
+        if pick not in tickers:
+            tickers.append(pick)
+    return tickers
+
+
+def prompt_tickers() -> list[str] | None:
+    print("Which stock(s) do you want to analyse?")
+    while True:
+        raw = input("Enter a company name or ticker (separate several with commas, q to quit): ").strip()
+        if not raw or raw.lower() in QUIT:
+            return None
+        from stocksreport.data import lookup
+        tickers = resolve_inputs(lookup.split_input(raw), interactive=True)
+        if tickers:
+            return tickers
+        print("  Please try again.")
+
+
+def prompt_formats() -> list[str]:
+    while True:
+        raw = input("Which formats? html, xlsx, pptx — press Enter for all three: ").strip().lower()
+        if not raw:
+            return list(FORMATS)
+        chosen = [w for w in raw.replace(",", " ").split() if w]
+        if all(w in FORMATS for w in chosen):
+            return list(dict.fromkeys(chosen))
+        print("  Please type any of: html xlsx pptx (or press Enter).")
+
+
+def _prepare(args, ask_formats: bool) -> int | None:
+    """Fill args.tickers (and formats) from the user. Returns an exit code to stop, or None to continue."""
+    if args.tickers:
+        tickers = resolve_inputs(args.tickers, interactive=_interactive_ok())
+        if not tickers:
+            return 1
+        args.tickers = tickers
+        return None
+    if not _interactive_ok():
+        print(USAGE, file=sys.stderr)
+        return 2
+    tickers = prompt_tickers()
+    if not tickers:
+        print("Nothing to analyse — goodbye.")
+        return 0
+    args.tickers = tickers
+    if ask_formats and args.format is None:
+        args.format = prompt_formats()
+    print(f"Analysing {', '.join(tickers)} ...")
+    return None
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     common = argparse.ArgumentParser(add_help=False)
-    common.add_argument("tickers", nargs="+", help="ticker symbols, e.g. AAPL MSFT")
+    common.add_argument("tickers", nargs="*",
+                        help="company names or ticker symbols, e.g. apple NVDA (leave out to be asked)")
     common.add_argument("--out", default="reports", help="output folder (default: reports/)")
     common.add_argument("--no-cache", action="store_true", help="ignore the 12h on-disk data cache")
 
@@ -79,14 +169,24 @@ def main(argv=None) -> int:
         p = argparse.ArgumentParser(prog="cli.py verify", parents=[common],
                                     description="Reconcile retrieved data against SEC filings and Nasdaq prices.")
         p.add_argument("--strict", action="store_true", help="exit with code 1 if any check FAILs")
-        return _verify(p.parse_args(argv[1:]))
+        args = p.parse_args(argv[1:])
+        if (stop := _prepare(args, ask_formats=False)) is not None:
+            return stop
+        return _verify(args)
 
     p = argparse.ArgumentParser(prog="cli.py", parents=[common],
-                                description="Free stock analysis reports (use `cli.py verify ...` for data checks).")
-    p.add_argument("--format", nargs="+", choices=["html", "xlsx", "pptx"], default=["html"])
+                                description="Free stock analysis reports. Run without arguments to be asked which "
+                                            "company to analyse (use `cli.py verify ...` for data checks).")
+    p.add_argument("--format", nargs="+", choices=FORMATS, default=None,
+                   help="files to create (default: html; when asked interactively: your choice)")
     p.add_argument("--peers", nargs="+", help="override the sector peer list")
     p.add_argument("--no-verify", action="store_true", help="skip SEC/Nasdaq data verification")
-    return _report(p.parse_args(argv))
+    args = p.parse_args(argv)
+    if (stop := _prepare(args, ask_formats=True)) is not None:
+        return stop
+    if args.format is None:
+        args.format = ["html"]
+    return _report(args)
 
 
 if __name__ == "__main__":
